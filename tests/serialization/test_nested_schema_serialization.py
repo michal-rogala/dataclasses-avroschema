@@ -2,22 +2,32 @@ import dataclasses
 import datetime
 import typing
 
+import pytest
+
 from dataclasses_avroschema import AvroModel
+from dataclasses_avroschema.avrodantic import AvroBaseModel
 
 
-def test_one_to_one_relationship():
+def no_op_decorator(f):
+    return f
+
+
+@pytest.mark.parametrize(
+    "base_model, decorator", [(AvroModel, dataclasses.dataclass), (AvroBaseModel, no_op_decorator)]
+)
+def test_one_to_one_relationship(base_model: typing.Type[AvroModel], decorator: typing.Callable):
     """
     Test schema relationship one-to-one serialization
     """
 
-    @dataclasses.dataclass
-    class Address(AvroModel):
+    @decorator
+    class Address(base_model):
         "An Address"
         street: str
         street_number: int
 
-    @dataclasses.dataclass
-    class User(AvroModel):
+    @decorator
+    class User(base_model):
         "An User with Address"
         name: str
         age: int
@@ -54,20 +64,23 @@ def test_one_to_one_relationship():
     assert user.to_dict() == expected
 
 
-def test_one_to_many_relationship():
+@pytest.mark.parametrize(
+    "base_model, decorator", [(AvroModel, dataclasses.dataclass), (AvroBaseModel, no_op_decorator)]
+)
+def test_one_to_many_relationship(base_model: typing.Type[AvroModel], decorator: typing.Callable):
     """
     Test schema relationship one-to-many serialization
     """
 
-    @dataclasses.dataclass
-    class Address(AvroModel):
+    @decorator
+    class Address(base_model):
         "An Address"
         street: str
         street_number: int
         created_at: datetime.datetime
 
-    @dataclasses.dataclass
-    class User(AvroModel):
+    @decorator
+    class User(base_model):
         "User with multiple Address"
         name: str
         age: int
@@ -119,19 +132,22 @@ def test_one_to_many_relationship():
     assert user.to_json()
 
 
-def test_one_to_many_map_relationship():
+@pytest.mark.parametrize(
+    "base_model, decorator", [(AvroModel, dataclasses.dataclass), (AvroBaseModel, no_op_decorator)]
+)
+def test_one_to_many_map_relationship(base_model: typing.Type[AvroModel], decorator: typing.Callable):
     """
     Test schema relationship one-to-many using a map serialization
     """
 
-    @dataclasses.dataclass
-    class Address(AvroModel):
+    @decorator
+    class Address(base_model):
         "An Address"
         street: str
         street_number: int
 
-    @dataclasses.dataclass
-    class User(AvroModel):
+    @decorator
+    class User(base_model):
         "User with multiple Address"
         name: str
         age: int
@@ -171,23 +187,26 @@ def test_one_to_many_map_relationship():
     assert user.to_dict() == expected
 
 
-def test_nested_schemas_splitted() -> None:
+@pytest.mark.parametrize(
+    "base_model, decorator", [(AvroModel, dataclasses.dataclass), (AvroBaseModel, no_op_decorator)]
+)
+def test_nested_schemas_splitted(base_model: typing.Type[AvroModel], decorator: typing.Callable) -> None:
     """
     This test will cover the cases when nested schemas are
     used in a separate way.
     """
 
-    @dataclasses.dataclass
-    class A(AvroModel):
+    @decorator
+    class A(base_model):
         class Meta:
             namespace = "namespace"
 
-    @dataclasses.dataclass
-    class B(AvroModel):
+    @decorator
+    class B(base_model):
         a: A
 
-    @dataclasses.dataclass
-    class C(AvroModel):
+    @decorator
+    class C(base_model):
         b: B
         a: A
 
@@ -198,33 +217,36 @@ def test_nested_schemas_splitted() -> None:
     assert c.serialize() == b""
 
 
-def test_nested_schemas_splitted_with_unions() -> None:
+@pytest.mark.parametrize(
+    "base_model, decorator", [(AvroModel, dataclasses.dataclass), (AvroBaseModel, no_op_decorator)]
+)
+def test_nested_schemas_splitted_with_unions(base_model: typing.Type[AvroModel], decorator: typing.Callable) -> None:
     """
     This test will cover the cases when nested schemas with Unions that are
     used in a separate way.
     """
 
-    @dataclasses.dataclass
-    class S1(AvroModel):
+    @decorator
+    class S1(base_model):
         pass
 
-    @dataclasses.dataclass
-    class S2(AvroModel):
+    @decorator
+    class S2(base_model):
         pass
 
-    @dataclasses.dataclass
-    class A(AvroModel):
+    @decorator
+    class A(base_model):
         s: typing.Union[S1, S2]
 
         class Meta:
             namespace = "namespace"
 
-    @dataclasses.dataclass
-    class B(AvroModel):
+    @decorator
+    class B(base_model):
         a: A
 
-    @dataclasses.dataclass
-    class C(AvroModel):
+    @decorator
+    class C(base_model):
         b: B
         a: A
 
@@ -235,22 +257,27 @@ def test_nested_schemas_splitted_with_unions() -> None:
     assert c.serialize() == b"\x00\x00"
 
 
-def test_nested_scheamas_splitted_with_intermediates() -> None:
-    @dataclasses.dataclass
-    class A(AvroModel):
+@pytest.mark.parametrize(
+    "base_model, decorator", [(AvroModel, dataclasses.dataclass), (AvroBaseModel, no_op_decorator)]
+)
+def test_nested_schemas_splitted_with_intermediates(
+    base_model: typing.Type[AvroModel], decorator: typing.Callable
+) -> None:
+    @decorator
+    class A(base_model):
         class Meta:
             namespace = "namespace"
 
-    @dataclasses.dataclass
-    class B(AvroModel):
+    @decorator
+    class B(base_model):
         a: A
 
-    @dataclasses.dataclass
-    class C(AvroModel):
+    @decorator
+    class C(base_model):
         a: A
 
-    @dataclasses.dataclass
-    class D(AvroModel):
+    @decorator
+    class D(base_model):
         b: B
         c: C
 
@@ -263,14 +290,17 @@ def test_nested_scheamas_splitted_with_intermediates() -> None:
     assert c.serialize() == b""
 
 
-def test_nested_several_layers():
-    @dataclasses.dataclass
-    class Friend(AvroModel):
+@pytest.mark.parametrize(
+    "base_model, decorator", [(AvroModel, dataclasses.dataclass), (AvroBaseModel, no_op_decorator)]
+)
+def test_nested_several_layers(base_model: typing.Type[AvroModel], decorator: typing.Callable):
+    @decorator
+    class Friend(base_model):
         name: str
         hobbies: typing.List[str]
 
-    @dataclasses.dataclass
-    class User(AvroModel):
+    @decorator
+    class User(base_model):
         name: str
         friends: typing.List[Friend]
 
